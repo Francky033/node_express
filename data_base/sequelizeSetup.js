@@ -1,34 +1,56 @@
-// B. On importe le gabarit du Model Coworking défini dans le fichier ./models/coworking'
-const CoworkingModel = require('../models/coworking')
+const CoworkingModel = require('../models/coworkingModel')
+const UserModel = require('../models/userModel')
+const RoleModel = require('../models/roleModel')
 const { Sequelize, DataTypes } = require('sequelize');
+const { setCoworkings, setUsers, setRoles, setCustomers, setRegistrations } = require('./setDataSample');
+const reviewModel = require('../models/reviewModel');
+// const customerModel = require('../models/customerModel');
+// const registrationModel = require('../models/registrationModel');
 
-// A. On créé une instance de bdd qui communique avec Xampp 
 const sequelize = new Sequelize('bordeaux_coworkings', 'root', '', {
     host: 'localhost',
     dialect: 'mariadb',
     logging: false
 });
 
-// C. On instancie un Model qui permettra d'interpréter le Javascript avec la Table SQL correspondante
+const Role = RoleModel(sequelize, DataTypes)
+const User = UserModel(sequelize, DataTypes)
 const Coworking = CoworkingModel(sequelize, DataTypes)
+const Review = reviewModel(sequelize, DataTypes)
+// const Customer = customerModel(sequelize, DataTypes)
+// const Registration = registrationModel(sequelize, DataTypes, Coworking, Customer)
 
-// D. On synchronise la BDD avec les models défini dans notre API
+Role.hasMany(User)
+User.belongsTo(Role)
+
+User.hasMany(Coworking)
+Coworking.belongsTo(User)
+
+User.hasMany(Review)
+Review.belongsTo(User)
+
+Coworking.hasMany(Review)
+Review.belongsTo(Coworking)
+
+// Coworking.belongsToMany(Customer, { through: Registration });
+// Customer.belongsToMany(Coworking, { through: Registration });
+
 sequelize.sync({ force: true })
-    .then(() => {
-        Coworking.create({
-            firstName: "Paul",
-            lastName: "Doazan",
-            price : { "hour": null, "day": 25, "month": 199 },
-            address: { "number": "7", "street": "place des Citernes", "postCode": 33800, "city": "Bordeaux" },
-            superficy: 1400,
-            capacity: 45 
-        })
+    .then(async () => {
+        await setRoles(Role)
+        await setUsers(User)
+        await setCoworkings(Coworking)
+        // await setCustomers(Customer)
+        // setRegistrations(Registration)
     })
+    .catch(error => {
+        console.log(error)
+    })
+
 
 sequelize.authenticate()
     .then(() => console.log('La connexion à la base de données a bien été établie.'))
     .catch(error => console.error(`Impossible de se connecter à la base de données ${error}`))
 
 
-    //module.exports ={} permet dexporter chaque fichier
-    module.exports = { sequelize }
+module.exports = { Coworking, User, Role, Review, sequelize }

@@ -1,56 +1,21 @@
 const express = require('express')
 const router = express.Router()
-let mockCoworkings = require('../mock-coworkings')
+const { findAllCoworkings, findCoworkingByPk, createCoworking, updateCoworking, deleteCoworking, findAllCoworkingsRawSQL } = require('../controllers/coworkingControllers')
+const { protect, restrictToOwnUser } = require('../controllers/authControllers')
 
 router
     .route('/')
-    .get((req, res) => {
-        res.json(mockCoworkings)
-    })
-    .post((req, res) => {
-        const newId = mockCoworkings[mockCoworkings.length - 1].id + 1
-        let coworking = { id: newId, ...req.body }
-        mockCoworkings.push(coworking)
-        const result = { message: `Le coworking a bien été ajouté`, data: coworking }
-        res.json(result)
-    })
+    .get(findAllCoworkings)
+    .post(protect, createCoworking)
+
+router
+    .route('/rawsql')
+    .get(findAllCoworkingsRawSQL)
 
 router
     .route('/:id')
-    .get((req, res) => {
-        let result = mockCoworkings.find(el => el.id === parseInt(req.params.id))
+    .get(findCoworkingByPk)
+    .put(protect, restrictToOwnUser, updateCoworking)
+    .delete(protect, restrictToOwnUser, deleteCoworking)
 
-        if (!result) {
-            result = `Aucun élément ne correspond à l'id n°${req.params.id}`
-        }
-        res.json(result)
-    })
-    .put((req, res) => {
-        let coworking = mockCoworkings.find((el) => el.id === parseInt(req.params.id))
-
-        let result;
-        if (coworking) {
-            const newCoworking = { ...coworking, ...req.body }
-            const index = mockCoworkings.findIndex(el => el.id === parseInt(req.params.id))
-            mockCoworkings[index] = newCoworking
-            result = { message: 'Coworking modifié', data: newCoworking }
-        } else {
-            result = { message: `Le coworking n'existe pas`, data: {} }
-        }
-
-        res.json(result)
-    })
-    .delete((req, res) => {
-        const coworking = mockCoworkings.find((el) => el.id === parseInt(req.params.id))
-
-        let result;
-        if (coworking) {
-            mockCoworkings = mockCoworkings.filter(el => el.id !== coworking.id)
-            result = { message: 'Coworking supprimé', data: coworking }
-        } else {
-            result = { message: `Le coworking n'existe pas`, data: {} }
-        }
-
-        res.json(result)
-    })
 module.exports = router
